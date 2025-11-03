@@ -8326,7 +8326,7 @@ if (timeOfDay < 1 && Math.random() < 0.001) {
                 let validPerches = allPerchPositions.filter(perch => {
                     // VALIDATION: Ensure perch is above ground and within reasonable bounds
                     if (perch.y >= groundY - 10) return false; // Perch must be above ground
-                    if (perch.y < 50) return false; // Not too high in sky
+                    if (perch.y < 50 && !perch.isClock) return false; // Not too high in sky (except clock perches)
                     if (perch.x < 20 || perch.x > canvas.width - 20) return false; // Within horizontal bounds
 
                     // Check if there's a bird already perched here (RESPONSIVE)
@@ -9663,7 +9663,7 @@ if ((isRaining || timeOfDay >= 1) && Math.random() < 0.4) { // 40% chance to see
                             if (this.hunger > HUNGER_CRITICAL_THRESHOLD - 50) {
                                 // Go find food if somewhat hungry
                                 this.findFoodSource();
-                            } else if (!this.isWild && !this.myNest && r < 0.15) { // Balanced: 15% chance to collect nest materials
+                            } else if (!this.isWild && !this.myNest && r < 0.30) { // Increased: 30% chance to collect nest materials for more frequent nests
                                 this.findTwigs();
                             } else if (r < BIRD_STATE_PREFERENCES.HOPPING) { // NEW: Check for hopping preference
                                 // Prefer hopping on ground for foraging
@@ -17744,7 +17744,7 @@ function drawAnts() {
             });
 
             // Base spawn chance, increased by branch count
-            let spawnChance = 0.012; // Base: 1.2%
+            let spawnChance = 0.007; // Base: 0.7% (reduced to make squirrels more rare)
             const branchMultiplier = Math.min(totalBranches / 10, 2); // Up to 2x multiplier (caps at 20 branches)
             spawnChance = spawnChance * (1 + branchMultiplier);
 
@@ -19580,7 +19580,7 @@ function spawnOwls() {
                 // Store position for perching (including colon!)
                 window.clockNumberPositions.push({
                     x: charX,
-                    y: clockY - 100, // top of numbers (adjusted for larger size)
+                    y: clockY - fontSize * 0.35, // perch on top of numbers (35% above center for proper positioning)
                     width: charSpacing,
                     charIndex: i,
                     char: char,
@@ -19591,7 +19591,7 @@ function spawnOwls() {
                 birdNearby = birdsOnClock.some(birdPos => {
                     const dist = Math.sqrt(
                         Math.pow(birdPos.birdX - charX, 2) +
-                        Math.pow(birdPos.birdY - (clockY - 100), 2)
+                        Math.pow(birdPos.birdY - (clockY - fontSize * 0.35), 2)
                     );
                     return dist < charSpacing;
                 });
@@ -21347,6 +21347,9 @@ function drawFullScene() {
     if (clockToggle) {
         clockToggle.addEventListener('change', () => {
             clockEnabled = clockToggle.checked;
+            if (clockEnabled && !window.clockNumberPositions) {
+                window.clockNumberPositions = []; // Initialize array for bird perching
+            }
             debugLog(`Clock display ${clockEnabled ? 'enabled' : 'disabled'}`);
         });
     }
