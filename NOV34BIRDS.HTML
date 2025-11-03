@@ -8681,6 +8681,59 @@ if (timeOfDay < 1 && Math.random() < 0.001) {
                 }
             }
 
+            findNearestFood() {
+                // Find the nearest food source (worm, bush fruit, or food item) without changing state
+                let closestFood = null;
+                let closestDist = Infinity;
+                const visionRadius = 500; // Use large vision radius for hungry birds
+
+                // Check worms first (most nutritious)
+                for (const worm of worms) {
+                    const dist = distance(this.x, this.y, worm.x, worm.y);
+                    if (dist < closestDist && dist < visionRadius && !this.isDangerZone(worm.x, worm.y)) {
+                        closestDist = dist;
+                        closestFood = {
+                            type: 'worm',
+                            entity: worm,
+                            x: worm.x,
+                            y: worm.y
+                        };
+                    }
+                }
+
+                // Check bushes with fruit
+                for (const bush of bushes) {
+                    if (bush.fruitCount > 0) {
+                        const dist = distance(this.x, this.y, bush.x, bush.y - bush.height / 2);
+                        if (dist < closestDist && dist < visionRadius && !this.isDangerZone(bush.x, bush.y)) {
+                            closestDist = dist;
+                            closestFood = {
+                                type: 'bush',
+                                entity: bush,
+                                x: bush.x,
+                                y: bush.y - bush.height / 2
+                            };
+                        }
+                    }
+                }
+
+                // Check food items
+                for (const food of foodItems) {
+                    const dist = distance(this.x, this.y, food.x, food.y);
+                    if (dist < closestDist && dist < visionRadius && !this.isDangerZone(food.x, food.y)) {
+                        closestDist = dist;
+                        closestFood = {
+                            type: 'food',
+                            entity: food,
+                            x: food.x,
+                            y: food.y
+                        };
+                    }
+                }
+
+                return closestFood;
+            }
+
             findTwigs() {
                 // Find twigs to build nest
                 let foundTwig = false;
