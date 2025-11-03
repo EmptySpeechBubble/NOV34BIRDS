@@ -7525,14 +7525,23 @@ function drawWorms() {
             degrade(deltaTime) {
                 // Increment age with slight randomness
                 this.age += deltaTime * (0.4 + Math.random() * 0.1);
-                
-                // Trees with nests are more resistant
+
+                // Trees with nests, eggs, or baby birds are much more resistant
                 const hasNest = this.nest !== null;
-                const degradationMultiplier = hasNest ? 0.5 : 1.2;
-                
+                let hasEggsOrBabies = false;
+
+                if (hasNest) {
+                    // Check for eggs associated with this nest
+                    hasEggsOrBabies = eggs.some(egg => egg.associatedNest === this.nest) ||
+                                      babyBirds.some(baby => baby.associatedNest === this.nest);
+                }
+
+                // Strong protection for trees with active nests/eggs/babies
+                const degradationMultiplier = hasEggsOrBabies ? 0.25 : (hasNest ? 0.5 : 1.2);
+
                 // Soften the sudden death at TREE_LIFESPAN
                 const lifespanFactor = 1 + Math.min(1.2, Math.max(0, (this.age - TREE_LIFESPAN * 0.9) / (TREE_LIFESPAN * 0.1)));
-                
+
                 // Trees degrade with age and can recover with rain
                 if (timeOfDay >= 1 && !isRaining) {
                     // Faster degradation at night without rain
@@ -7542,17 +7551,17 @@ function drawWorms() {
 
 
                 } else if (isRaining && timeOfDay < 1) {
-    // Trees recover during rain in daytime
-    const recoveryRate = hasNest ? 0.025 : 0.0125;
+    // Trees recover during rain in daytime - extra recovery for trees with eggs/babies
+    const recoveryRate = hasEggsOrBabies ? 0.04 : (hasNest ? 0.025 : 0.0125);
     this.health = Math.min(100, this.health + recoveryRate * (deltaTime / 1000));
 } else if (timeOfDay < 1) {
 
 
 
-                    
+
 } else if (timeOfDay < 1) {
-    // Trees gain a small health boost during the day, more if they have nests
-    const sunRecoveryRate = hasNest ? 0.00625 : 0.003;
+    // Trees gain a small health boost during the day, more if they have nests/eggs/babies
+    const sunRecoveryRate = hasEggsOrBabies ? 0.0125 : (hasNest ? 0.00625 : 0.003);
     this.health = Math.min(100, this.health + sunRecoveryRate * (deltaTime / 1000));
 }
 
@@ -7581,11 +7590,20 @@ if (timeOfDay < 1 && Math.random() < 0.001) {
 
 
 
-                
-                // Check if tree should be removed
-                if (this.health <= TREE_HEALTH_THRESHOLD || this.age > TREE_LIFESPAN) {
+
+                // Check if tree should be removed - but NEVER remove trees with eggs or baby birds
+                const hasActiveLife = hasEggsOrBabies;
+
+                // If tree has eggs or babies, boost health to keep it alive
+                if (hasActiveLife && this.health < 30) {
+                    this.health = 30; // Minimum health for trees with active nests
+                    debugLog(`Tree at (${this.x}, ${this.y}) health boosted to protect eggs/babies`);
+                }
+
+                // Only allow removal if no eggs/babies present
+                if ((this.health <= TREE_HEALTH_THRESHOLD || this.age > TREE_LIFESPAN) && !hasActiveLife) {
                     debugLog(`Tree at (${this.x}, ${this.y}) has ${this.health <= TREE_HEALTH_THRESHOLD ? 'degraded completely' : 'reached end of lifespan'}.`);
-                    
+
                     // If the tree has a nest, handle the nest and any baby birds
                     if (this.nest) {
                         const nestIndex = nests.indexOf(this.nest);
