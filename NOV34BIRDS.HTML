@@ -13021,14 +13021,26 @@ class Squirrel {
                     }
                     
                     const heightDiff = this.y - this.targetY;
-                    
+
                     if (Math.abs(heightDiff) < 5) {
-                        // Reached target height
-                        this.state = 'inTree';
-                        this.stateTimer = 0;
-                        this.x = this.climbingTree.x; // Center on trunk
-                        this.velocity = { x: 0, y: 0 }; // Stop all movement
-                        debugLog(`Squirrel reached top of tree at (${this.climbingTree.x})`);
+                        // Reached target height - check if at ground or in tree
+                        if (this.targetY >= this.groundY - 20) {
+                            // Reached ground level - return to wandering
+                            this.state = 'wandering';
+                            this.stateTimer = 0;
+                            this.climbingTree = null;
+                            this.targetY = null;
+                            this.y = this.groundY; // Place on ground
+                            this.velocity = { x: 0, y: 0 };
+                            debugLog(`Squirrel reached ground and resumed wandering`);
+                        } else {
+                            // Reached tree top - enter inTree state
+                            this.state = 'inTree';
+                            this.stateTimer = 0;
+                            this.x = this.climbingTree.x; // Center on trunk
+                            this.velocity = { x: 0, y: 0 }; // Stop all movement
+                            debugLog(`Squirrel reached top of tree at (${this.climbingTree.x})`);
+                        }
                     } else {
                         // Climb up or down - use constant speed rather than deltaTime
                         // to avoid dependency issues
